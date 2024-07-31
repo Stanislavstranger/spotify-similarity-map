@@ -4,6 +4,14 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const transform = { x: 0, y: 0, scale: 1 };
   let nodes: any[] = [];
 
+  const resizeCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+  }, [canvasRef]);
+
   const drawNode = (
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -155,7 +163,9 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
           <strong>${hoveredNode.song.Track}</strong><br>
           Artist: ${hoveredNode.song.Artist}<br>
           Score: ${hoveredNode.song['Track Score']}<br>
-          Streams: ${hoveredNode.song['Spotify Streams']}
+          Streams: ${hoveredNode.song['Spotify Streams']}<br>
+          Release Date': ${hoveredNode.song['Release Date']}<br>
+          Album Name': ${hoveredNode.song['Album Name']}
         `);
         } else {
           setTooltipContent(null);
@@ -189,9 +199,14 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
           drawMap(data, similarityMatrix);
         }
       });
+
+      window.addEventListener('resize', resizeCanvas);
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+      };
     },
-    [canvasRef, drawMap]
+    [canvasRef, drawMap, resizeCanvas]
   );
 
-  return { drawMap, enableCanvasInteractions };
+  return { drawMap, enableCanvasInteractions, resizeCanvas };
 };

@@ -9,7 +9,8 @@ interface CanvasProps {
 
 export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { drawMap, enableCanvasInteractions } = useCanvas(canvasRef);
+  const { drawMap, enableCanvasInteractions, resizeCanvas } =
+    useCanvas(canvasRef);
   const [tooltipContent, setTooltipContent] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
     x: number;
@@ -18,6 +19,7 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
 
   useEffect(() => {
     if (canvasRef.current && data.length > 0 && similarityMatrix.length > 0) {
+      resizeCanvas();
       drawMap(data, similarityMatrix);
       enableCanvasInteractions(
         data,
@@ -26,16 +28,11 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
         setTooltipPosition
       );
     }
-  }, [data, similarityMatrix, drawMap, enableCanvasInteractions]);
+  }, [data, similarityMatrix, drawMap, enableCanvasInteractions, resizeCanvas]);
 
   return (
-    <div style={{ position: 'relative' }}>
-      <canvas
-        ref={canvasRef}
-        width="1200"
-        height="800"
-        style={{ border: '1px solid black' }}
-      ></canvas>
+    <div id="canvas-container">
+      <canvas ref={canvasRef} style={{ border: '1px solid black' }}></canvas>
       {tooltipContent && tooltipPosition && (
         <Tooltip position={tooltipPosition} content={tooltipContent} />
       )}
