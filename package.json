@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "A tool for analyzing and visualizing searches between the most popular songs on Spotify.",
   "type": "module",
+  "homepage": "https://Stanislavstranger.github.io/spotify-similarity-map",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -16,10 +17,12 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "d3": "^7.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
