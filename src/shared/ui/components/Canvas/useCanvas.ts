@@ -47,7 +47,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
       const width = canvas.width;
       const height = canvas.height;
-      const maxNodes = 20;
+      const maxNodes = data.length;
 
       nodes = data.slice(0, maxNodes).map((song, i) => ({
         x: Math.random() * width,
@@ -66,7 +66,6 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       ctx.scale(transform.scale, transform.scale);
 
       nodes.forEach((node) => {
-        console.log('Drawing node:', node);
         drawNode(ctx, node.x, node.y, node.size, 'blue');
       });
 
@@ -79,7 +78,6 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
         connections.forEach((connection) => {
           const targetNode = nodes[connection.index];
-          console.log('Drawing line from:', highlightedNode, 'to:', targetNode);
           drawLine(
             ctx,
             highlightedNode.x,
@@ -98,7 +96,12 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   );
 
   const enableCanvasInteractions = useCallback(
-    (data: any[], similarityMatrix: number[][]) => {
+    (
+      data: any[],
+      similarityMatrix: number[][],
+      setTooltipContent: (content: string | null) => void,
+      setTooltipPosition: (position: { x: number; y: number } | null) => void
+    ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -136,6 +139,28 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
           transform.y = event.offsetY - startY;
           drawMap(data, similarityMatrix);
         }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left - transform.x) / transform.scale;
+        const y = (event.clientY - rect.top - transform.y) / transform.scale;
+        const hoveredNode = nodes.find((node) => {
+          const dx = x - node.x;
+          const dy = y - node.y;
+          return Math.sqrt(dx * dx + dy * dy) < node.size;
+        });
+
+        if (hoveredNode) {
+          setTooltipPosition({ x: event.clientX + 10, y: event.clientY + 10 });
+          setTooltipContent(`
+          <strong>${hoveredNode.song.Track}</strong><br>
+          Artist: ${hoveredNode.song.Artist}<br>
+          Score: ${hoveredNode.song['Track Score']}<br>
+          Streams: ${hoveredNode.song['Spotify Streams']}
+        `);
+        } else {
+          setTooltipContent(null);
+          setTooltipPosition(null);
+        }
       });
 
       canvas.addEventListener('mouseup', () => {
@@ -144,6 +169,8 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
 
       canvas.addEventListener('mouseout', () => {
         isDragging = false;
+        setTooltipContent(null);
+        setTooltipPosition(null);
       });
 
       canvas.addEventListener('click', (event) => {

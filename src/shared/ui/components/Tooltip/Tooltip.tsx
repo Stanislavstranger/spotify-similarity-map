@@ -17,6 +17,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ position, content }) => {
         padding: '5px',
         borderRadius: '5px',
         pointerEvents: 'none',
+        zIndex: 1000,
       }}
     >
       <div dangerouslySetInnerHTML={{ __html: content }} />
