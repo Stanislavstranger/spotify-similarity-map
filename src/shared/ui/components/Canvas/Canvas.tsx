@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useCanvas } from './useCanvas';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { Loader } from '../Loader/Loader';
 
 interface CanvasProps {
   data: any[];
@@ -18,6 +19,7 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
   } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (canvasRef.current && data.length > 0 && similarityMatrix.length > 0) {
@@ -31,11 +33,13 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
         setPreviewUrl,
         setRecommendations
       );
+      setLoading(false);
     }
   }, [data, similarityMatrix, drawMap, enableCanvasInteractions, resizeCanvas]);
 
   return (
     <div id="canvas-container" style={{ width: '100%', height: '100vh' }}>
+      {loading && <Loader />}
       <canvas ref={canvasRef} style={{ display: 'block' }}></canvas>
       {tooltipContent && tooltipPosition && (
         <Tooltip position={tooltipPosition} content={tooltipContent} />
