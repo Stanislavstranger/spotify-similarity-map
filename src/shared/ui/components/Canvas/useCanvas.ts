@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { getTrackPreviewUrl, searchTrack } from '../../../api/spotify/api';
+import { kmeans } from 'ml-kmeans';
 
 export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   const transform = useRef({ x: 0, y: 0, scale: 1 });
@@ -46,7 +47,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
   };
 
   const drawMap = useCallback(
-    (
+    async (
       data: any[],
       similarityMatrix: number[][],
       highlightedNodeIndex: number | null = null
@@ -61,13 +62,29 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       const height = canvas.height;
       const maxNodes = data.length;
 
+      const featureVectors = data
+        .slice(0, maxNodes)
+        .map((song) => [song['Track Score'], song['Spotify Streams']]);
+      const k = 5;
+      const options = {
+        maxIterations: 100,
+        tolerance: 1e-4,
+        distanceFunction: (a: number[], b: number[]) => {
+          return Math.sqrt(a.reduce((sum, ai, i) => sum + (ai - b[i]) ** 2, 0));
+        },
+      };
+      const result = kmeans(featureVectors, k, options);
+
       nodes.current = data.slice(0, maxNodes).map((song, i) => ({
         x: Math.random() * width,
         y: Math.random() * height,
         size: Math.sqrt(song['Track Score']),
         song: song,
         index: i,
+        cluster: result.clusters[i],
       }));
+
+      const clusterColors = ['red', 'green', 'blue', 'yellow', 'purple'];
 
       ctx.clearRect(0, 0, width, height);
 
@@ -76,7 +93,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       ctx.scale(transform.current.scale, transform.current.scale);
 
       nodes.current.forEach((node) => {
-        drawNode(ctx, node.x, node.y, node.size, 'blue');
+        drawNode(ctx, node.x, node.y, node.size, clusterColors[node.cluster]);
       });
 
       if (highlightedNodeIndex !== null) {
