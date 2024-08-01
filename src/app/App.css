@@ -5,7 +5,7 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: rgb(31, 27, 27);
+  background-color: #363636;
 }
 
 #canvas-container {
@@ -24,4 +24,13 @@ audio {
   position: absolute;
   bottom: 10px;
   left: 10px;
+}
+
+#recommendations {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
 }

@@ -17,6 +17,7 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
     y: number;
   } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (canvasRef.current && data.length > 0 && similarityMatrix.length > 0) {
@@ -27,7 +28,8 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
         similarityMatrix,
         setTooltipContent,
         setTooltipPosition,
-        setPreviewUrl
+        setPreviewUrl,
+        setRecommendations
       );
     }
   }, [data, similarityMatrix, drawMap, enableCanvasInteractions, resizeCanvas]);
@@ -47,6 +49,27 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
           <source src={previewUrl} type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
+      )}
+      {recommendations && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10px',
+            right: '10px',
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '5px',
+          }}
+        >
+          <h4>Recommendations</h4>
+          <ul>
+            {recommendations.map((rec, index) => (
+              <li key={index}>
+                <strong>{rec.Track}</strong> by {rec.Artist}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

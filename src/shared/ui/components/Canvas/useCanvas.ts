@@ -46,6 +46,21 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
     ctx.stroke();
   };
 
+  const getRecommendations = (
+    index: number,
+    similarityMatrix: number[][],
+    data: any[],
+    numRecommendations: number = 5
+  ) => {
+    const similarities = similarityMatrix[index];
+    const recommendations = similarities
+      .map((similarity, i) => ({ index: i, similarity }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(1, numRecommendations + 1)
+      .map((rec) => data[rec.index]);
+    return recommendations;
+  };
+
   const drawMap = useCallback(
     async (
       data: any[],
@@ -78,7 +93,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       nodes.current = data.slice(0, maxNodes).map((song, i) => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.sqrt(song['Track Score']),
+        size: Math.sqrt(song['Track Score']) * 2,
         song: song,
         index: i,
         cluster: result.clusters[i],
@@ -128,7 +143,8 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       similarityMatrix: number[][],
       setTooltipContent: (content: string | null) => void,
       setTooltipPosition: (position: { x: number; y: number } | null) => void,
-      setPreviewUrl: (url: string | null) => void
+      setPreviewUrl: (url: string | null) => void,
+      setRecommendations: (recs: any[] | null) => void
     ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -198,10 +214,18 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
               setPreviewUrl
             );
           }
+
+          const recommendations = getRecommendations(
+            hoveredNode.index,
+            similarityMatrix,
+            data
+          );
+          setRecommendations(recommendations);
         } else {
           setTooltipContent(null);
           setTooltipPosition(null);
           setPreviewUrl(null);
+          setRecommendations(null);
         }
       };
 
@@ -220,6 +244,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         setTooltipContent(null);
         setTooltipPosition(null);
         setPreviewUrl(null);
+        setRecommendations(null);
       };
 
       const onMouseClick = (event: MouseEvent) => {
