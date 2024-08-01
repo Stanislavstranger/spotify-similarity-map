@@ -1,8 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
+import { getTrackPreviewUrl, searchTrack } from '../../../api/spotify/api';
 
 export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
-  const transform = { x: 0, y: 0, scale: 1 };
-  let nodes: any[] = [];
+  const transform = useRef({ x: 0, y: 0, scale: 1 });
+  const nodes = useRef<any[]>([]);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -57,7 +61,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       const height = canvas.height;
       const maxNodes = data.length;
 
-      nodes = data.slice(0, maxNodes).map((song, i) => ({
+      nodes.current = data.slice(0, maxNodes).map((song, i) => ({
         x: Math.random() * width,
         y: Math.random() * height,
         size: Math.sqrt(song['Track Score']),
@@ -65,27 +69,25 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         index: i,
       }));
 
-      console.log('Nodes to draw:', nodes);
-
       ctx.clearRect(0, 0, width, height);
 
       ctx.save();
-      ctx.translate(transform.x, transform.y);
-      ctx.scale(transform.scale, transform.scale);
+      ctx.translate(transform.current.x, transform.current.y);
+      ctx.scale(transform.current.scale, transform.current.scale);
 
-      nodes.forEach((node) => {
+      nodes.current.forEach((node) => {
         drawNode(ctx, node.x, node.y, node.size, 'blue');
       });
 
       if (highlightedNodeIndex !== null) {
-        const highlightedNode = nodes[highlightedNodeIndex];
+        const highlightedNode = nodes.current[highlightedNodeIndex];
         const connections = similarityMatrix[highlightedNodeIndex]
           .map((similarity, index) => ({ index, similarity }))
           .sort((a, b) => b.similarity - a.similarity)
           .slice(1, 11);
 
         connections.forEach((connection) => {
-          const targetNode = nodes[connection.index];
+          const targetNode = nodes.current[connection.index];
           drawLine(
             ctx,
             highlightedNode.x,
@@ -108,7 +110,8 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       data: any[],
       similarityMatrix: number[][],
       setTooltipContent: (content: string | null) => void,
-      setTooltipPosition: (position: { x: number; y: number } | null) => void
+      setTooltipPosition: (position: { x: number; y: number } | null) => void,
+      setPreviewUrl: (url: string | null) => void
     ) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -116,7 +119,7 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      canvas.addEventListener('wheel', (event) => {
+      const onWheel = (event: WheelEvent) => {
         event.preventDefault();
         const { offsetX, offsetY, deltaY } = event;
         const zoom = Math.exp(-deltaY / 100);
@@ -125,33 +128,28 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
         ctx.scale(zoom, zoom);
         ctx.translate(-offsetX, -offsetY);
 
-        transform.x = ctx.getTransform().e;
-        transform.y = ctx.getTransform().f;
-        transform.scale *= zoom;
+        transform.current.x = ctx.getTransform().e;
+        transform.current.y = ctx.getTransform().f;
+        transform.current.scale *= zoom;
 
-        drawMap(data, similarityMatrix);
-      });
+        window.requestAnimationFrame(() => drawMap(data, similarityMatrix));
+      };
 
-      let isDragging = false;
-      let startX: number, startY: number;
-
-      canvas.addEventListener('mousedown', (event) => {
-        isDragging = true;
-        startX = event.offsetX - transform.x;
-        startY = event.offsetY - transform.y;
-      });
-
-      canvas.addEventListener('mousemove', (event) => {
-        if (isDragging) {
-          transform.x = event.offsetX - startX;
-          transform.y = event.offsetY - startY;
-          drawMap(data, similarityMatrix);
+      const onMouseMove = async (event: MouseEvent) => {
+        if (isDragging.current) {
+          transform.current.x = event.offsetX - startX.current;
+          transform.current.y = event.offsetY - startY.current;
+          window.requestAnimationFrame(() => drawMap(data, similarityMatrix));
         }
 
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left - transform.x) / transform.scale;
-        const y = (event.clientY - rect.top - transform.y) / transform.scale;
-        const hoveredNode = nodes.find((node) => {
+        const x =
+          (event.clientX - rect.left - transform.current.x) /
+          transform.current.scale;
+        const y =
+          (event.clientY - rect.top - transform.current.y) /
+          transform.current.scale;
+        const hoveredNode = nodes.current.find((node) => {
           const dx = x - node.x;
           const dy = y - node.y;
           return Math.sqrt(dx * dx + dy * dy) < node.size;
@@ -163,46 +161,94 @@ export const useCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
           <strong>${hoveredNode.song.Track}</strong><br>
           Artist: ${hoveredNode.song.Artist}<br>
           Score: ${hoveredNode.song['Track Score']}<br>
-          Streams: ${hoveredNode.song['Spotify Streams']}<br>
-          Release Date': ${hoveredNode.song['Release Date']}<br>
-          Album Name': ${hoveredNode.song['Album Name']}
+          Streams: ${hoveredNode.song['Spotify Streams']}
         `);
+
+          if (!hoveredNode.song['Spotify Track ID']) {
+            const trackId = await searchTrack(
+              hoveredNode.song.Track,
+              hoveredNode.song.Artist
+            );
+            if (trackId) {
+              hoveredNode.song['Spotify Track ID'] = trackId;
+            } else {
+              console.error('Track ID not found for', hoveredNode.song.Track);
+            }
+          }
+
+          if (hoveredNode.song['Spotify Track ID']) {
+            getTrackPreviewUrl(hoveredNode.song['Spotify Track ID']).then(
+              setPreviewUrl
+            );
+          }
         } else {
           setTooltipContent(null);
           setTooltipPosition(null);
+          setPreviewUrl(null);
         }
-      });
+      };
 
-      canvas.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
+      const onMouseDown = (event: MouseEvent) => {
+        isDragging.current = true;
+        startX.current = event.offsetX - transform.current.x;
+        startY.current = event.offsetY - transform.current.y;
+      };
 
-      canvas.addEventListener('mouseout', () => {
-        isDragging = false;
+      const onMouseUp = () => {
+        isDragging.current = false;
+      };
+
+      const onMouseOut = () => {
+        isDragging.current = false;
         setTooltipContent(null);
         setTooltipPosition(null);
-      });
+        setPreviewUrl(null);
+      };
 
-      canvas.addEventListener('click', (event) => {
+      const onMouseClick = (event: MouseEvent) => {
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left - transform.x) / transform.scale;
-        const y = (event.clientY - rect.top - transform.y) / transform.scale;
-        const clickedNodeIndex = nodes.findIndex((node) => {
+        const x =
+          (event.clientX - rect.left - transform.current.x) /
+          transform.current.scale;
+        const y =
+          (event.clientY - rect.top - transform.current.y) /
+          transform.current.scale;
+        const clickedNodeIndex = nodes.current.findIndex((node) => {
           const dx = x - node.x;
           const dy = y - node.y;
           return Math.sqrt(dx * dx + dy * dy) < node.size;
         });
 
         if (clickedNodeIndex !== -1) {
-          drawMap(data, similarityMatrix, clickedNodeIndex);
+          window.requestAnimationFrame(() =>
+            drawMap(data, similarityMatrix, clickedNodeIndex)
+          );
         } else {
-          drawMap(data, similarityMatrix);
+          window.requestAnimationFrame(() => drawMap(data, similarityMatrix));
         }
-      });
+      };
 
-      window.addEventListener('resize', resizeCanvas);
+      const handleResize = () => {
+        resizeCanvas();
+        window.requestAnimationFrame(() => drawMap(data, similarityMatrix));
+      };
+
+      canvas.addEventListener('wheel', onWheel);
+      canvas.addEventListener('mousemove', onMouseMove);
+      canvas.addEventListener('mousedown', onMouseDown);
+      canvas.addEventListener('mouseup', onMouseUp);
+      canvas.addEventListener('mouseout', onMouseOut);
+      canvas.addEventListener('click', onMouseClick);
+      window.addEventListener('resize', handleResize);
+
       return () => {
-        window.removeEventListener('resize', resizeCanvas);
+        canvas.removeEventListener('wheel', onWheel);
+        canvas.removeEventListener('mousemove', onMouseMove);
+        canvas.removeEventListener('mousedown', onMouseDown);
+        canvas.removeEventListener('mouseup', onMouseUp);
+        canvas.removeEventListener('mouseout', onMouseOut);
+        canvas.removeEventListener('click', onMouseClick);
+        window.removeEventListener('resize', handleResize);
       };
     },
     [canvasRef, drawMap, resizeCanvas]
