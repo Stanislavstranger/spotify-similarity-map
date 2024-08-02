@@ -7,5 +7,5 @@ dotenv.config();
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/spotify-similarity-map/',
+  base: process.env.VITE_BASE_URL,
 });
