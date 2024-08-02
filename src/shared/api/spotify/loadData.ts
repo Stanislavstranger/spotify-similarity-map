@@ -11,7 +11,7 @@ interface Song {
 
 export const loadData = async (): Promise<Song[]> => {
   const data: Song[] = await d3.csv(
-    '/src/assets/data/Most Streamed Spotify Songs 2024.csv',
+    'src/assets/data/Most Streamed Spotify Songs 2024.csv',
     (d: Record<string, string>) => ({
       Track: d.Track,
       Artist: d.Artist,
