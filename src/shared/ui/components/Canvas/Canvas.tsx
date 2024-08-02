@@ -20,6 +20,7 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<any[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [allowPlayback, setAllowPlayback] = useState<boolean>(false);
 
   useEffect(() => {
     if (canvasRef.current && data.length > 0 && similarityMatrix.length > 0) {
@@ -37,14 +38,35 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
     }
   }, [data, similarityMatrix, drawMap, enableCanvasInteractions, resizeCanvas]);
 
+  const handlePlaybackToggle = () => {
+    setAllowPlayback(!allowPlayback);
+  };
+
   return (
     <div id="canvas-container" style={{ width: '100%', height: '100vh' }}>
       {loading && <Loader />}
+      {!loading && (
+        <button
+          onClick={handlePlaybackToggle}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            zIndex: 1000,
+            padding: '10px',
+            backgroundColor: 'white',
+            borderRadius: '5px',
+            cursor: 'pointer',
+          }}
+        >
+          {allowPlayback ? '🔊' : '🔇'}
+        </button>
+      )}
       <canvas ref={canvasRef} style={{ display: 'block' }}></canvas>
       {tooltipContent && tooltipPosition && (
         <Tooltip position={tooltipPosition} content={tooltipContent} />
       )}
-      {previewUrl && (
+      {previewUrl && allowPlayback && (
         <audio
           controls
           autoPlay
