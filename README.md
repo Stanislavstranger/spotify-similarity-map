@@ -19,6 +19,7 @@ Welcome to the Spotify Song Similarity Analysis and Visualization project! This 
 - Tooltips: Displays song information when hovering over nodes.
 
 ## Getting Started:
+
 ## Prerequisites:
 
 - Node.js
@@ -34,11 +35,13 @@ git clone https://github.com/Stanislavstranger/spotify-similarity-map.git
 ```
 
 ### Navigate to the project directory:
+
 ```
 cd spotify-song-similarity
 ```
 
 ### Install dependencies:
+
 ```
 npm install
 ```
@@ -46,10 +49,13 @@ npm install
 ## Running the Application:
 
 ### Run the data retrieval script:
+
 ```
 npm run dev
 ```
+
 ### Open your browser and navigate to:
+
 ```
  http://localhost:5173
 ```
@@ -78,4 +84,3 @@ If you have any questions or suggestions, feel free to reach out to me at stanis
 ---
 
 🙏 Thank you for using our Spotify Song Similarity Analysis and Visualization tool! Enjoy exploring the world of music with me.
-

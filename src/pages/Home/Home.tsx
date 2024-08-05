@@ -10,10 +10,8 @@ export const Home: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       const loadedData = await loadData();
-      console.log('Data loaded:', loadedData);
       setData(loadedData);
       const matrix = calculateSimilarityMatrix(loadedData);
-      console.log('Similarity matrix calculated:', matrix);
       setSimilarityMatrix(matrix);
     };
 
