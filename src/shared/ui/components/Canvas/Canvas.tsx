@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useCanvas } from './useCanvas';
+import { useCanvas } from './hooks/useCanvas';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { Loader } from '../Loader/Loader';
 
@@ -10,7 +10,7 @@ interface CanvasProps {
 
 export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { drawMap, enableCanvasInteractions, resizeCanvas } =
+  const { drawInitialMap, enableCanvasInteractions, resizeCanvas } =
     useCanvas(canvasRef);
   const [tooltipContent, setTooltipContent] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{
@@ -25,7 +25,7 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
   useEffect(() => {
     if (canvasRef.current && data.length > 0 && similarityMatrix.length > 0) {
       resizeCanvas();
-      drawMap(data, similarityMatrix);
+      drawInitialMap(data, similarityMatrix);
       enableCanvasInteractions(
         data,
         similarityMatrix,
@@ -36,7 +36,13 @@ export const Canvas: React.FC<CanvasProps> = ({ data, similarityMatrix }) => {
       );
       setLoading(false);
     }
-  }, [data, similarityMatrix, drawMap, enableCanvasInteractions, resizeCanvas]);
+  }, [
+    data,
+    similarityMatrix,
+    drawInitialMap,
+    enableCanvasInteractions,
+    resizeCanvas,
+  ]);
 
   const handlePlaybackToggle = () => {
     setAllowPlayback(!allowPlayback);
